@@ -1,0 +1,16 @@
+@model CustomerCreateDto
+@{
+    ViewData["Title"] = "Create Customer";
+}
+<h1 class="h3 mb-3">Create Customer</h1>
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <partial name="_CreateFields" model="Model" />
+            <button class="btn btn-primary" type="submit">Create</button>
+            <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+        </form>
+    </div>
+</div>

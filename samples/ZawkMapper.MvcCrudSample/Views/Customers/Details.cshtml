@@ -1,0 +1,54 @@
+@model CustomerDetailsDto
+@{
+    ViewData["Title"] = "Customer Details";
+}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h1 class="h3 mb-1">@Model.FullName</h1>
+        <p class="text-muted mb-0">This page uses projection with nested order DTOs.</p>
+    </div>
+    <div>
+        <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.CustomerId">Edit</a>
+        <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5>Profile</h5>
+                <dl class="mb-0">
+                    <dt>Email</dt><dd>@Model.Email</dd>
+                    <dt>Mobile</dt><dd>@Model.MobileNumber</dd>
+                    <dt>City</dt><dd>@Model.City</dd>
+                    <dt>Date of Birth</dt><dd>@Model.DateOfBirth.ToString("yyyy-MM-dd")</dd>
+                    <dt>Status</dt><dd>@Model.StatusText</dd>
+                    <dt>Premium</dt><dd>@(Model.IsPremium ? "Yes" : "No")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5>Orders</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr><th>Order #</th><th>Date</th><th>Total</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr>
+                            <td>@order.OrderNumber</td>
+                            <td>@order.OrderDateUtc.ToString("yyyy-MM-dd")</td>
+                            <td>@order.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
