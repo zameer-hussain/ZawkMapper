@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ZawkMapper.Abstractions;
-using ZawkMapper.Configuration;
-using ZawkMapper.Core;
+using ZawkMapper.Extensions;
 using ZawkMapper.MvcCrudSample.Data;
 using ZawkMapper.MvcCrudSample.Mapping;
 using ZawkMapper.MvcCrudSample.Repositories;
@@ -26,9 +24,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     }//if sql logging enabled
 });
 
-var mapperConfiguration = AppMappingConfig.CreateConfiguration();
-builder.Services.AddSingleton(mapperConfiguration);
-builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
+builder.Services.AddZawkMapper(cfg =>
+{
+    cfg.AddProfilesFromAssembly(typeof(ProductMappingProfile).Assembly);
+});
 
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();

@@ -1,48 +1,61 @@
 # Changelog
 
-## 0.5.0-rc.2
+## 0.6.0-rc.2
 
-- Added expanded performance lab scenarios for strict-only, flexible-only, and mixed mapping.
-- Added cache hit/miss measurements for runtime plans and projection expressions.
-- Added memory delta output to performance CSV.
-- Added named projection, nested projection, collection-to-single projection, and conversion-specific performance scenarios.
-- Added small map-resolution cache to reduce repeated named/default map lookup overhead.
-- Added performance-lab documentation.
+### Changed
 
-## 0.5.0-rc.1
+MVC sample projection maps now avoid repeating `IsDeleted` checks where EF Core global query filters already apply them.
 
-- Added `MapFieldStrict` for compile-time same-type member mapping.
-- Added `ForMemberStrict` compatibility alias.
-- Kept `MapField` flexible for runtime conversion scenarios.
-- Improved README and SEO-friendly documentation.
-- Added strict mapping documentation.
-- Added unit-style test project for core mapping scenarios.
-- Added NuGet package icon support through `PackageIcon`.
-- Updated package metadata for ZawkTech / Zameer Hussain Vighio.
-- Kept package fully free with no license checks and no telemetry.
+Runtime cycle detection uses a cached path key on each map definition, so repeated runtime mapping avoids building that key again and again.
 
-## 0.4.4-preview
+README and docs now include updated project credits.
 
-- Fixed MVC sample namespace/reference issues.
-- Cleaned sample mapping profile.
+### Guidance
 
-## 0.4.3-preview
+If an entity already has an EF Core global query filter, avoid writing the same filter again inside `ProjectModel` unless you intentionally want that extra condition in the expression.
 
-- Added cached runtime mapping plan.
-- Improved runtime mapping performance significantly.
-- Added internal performance lab enhancements.
+Use constants or static readonly values for map/projection names to avoid spelling mistakes.
 
-## 0.4.0-preview
+Use cached app-level configuration for reusable rules, named projections for finite choices, and scenario-level configuration when the mapping expression depends on request values.
 
-- Renamed VighioMapper to ZawkMapper.
-- Added official API names and compatibility aliases.
-- Added nested projection reuse, named maps, profile scanning, and DI registration.
+## 0.6.0-rc.1
+
+### Changed
+
+`MapModel` and `ProjectModel` are now separate registration types.
+
+A duplicate `MapModel` for the same source, destination, and name still throws.
+
+A duplicate `ProjectModel` for the same source, destination, and name still throws.
+
+One `MapModel` and one `ProjectModel` for the same source, destination, and name are now allowed.
+
+`ProjectAs` uses `ProjectModel` first. If no projection exists, it can reuse `MapModel` when the mapping rules are projection-safe.
+
+### Added
+
+Clearer XML documentation for public APIs so method hover text explains source type, destination type, and usage.
+
+Clearer duplicate and missing configuration error messages.
+
+MVC sample pages for English and Sindhi named projection, runtime map versus projection, salary increment, prefix and suffix, and static cached configuration call.
+
+Unit tests for separate runtime and projection registration, projection fallback, Sindhi named projection, and scenario-level request values.
+
+Performance lab checks for runtime plus projection on the same pair, named Sindhi projection, and scenario-level salary increment projection.
+
+### Guidance
+
+Use constants or static readonly values for map/projection names to avoid spelling mistakes.
+
+Keep package behavior generic. Do not add built-in language enums to the package.
+
+Use cached app-level configuration for reusable rules.
+
+Use named projections for finite choices such as English, Sindhi, list, detail, public, or admin.
+
+Use scenario-level configuration when the mapping expression itself depends on request values such as salary increment percentage, prefix, or suffix.
 
 ## 0.5.0-rc.4
 
-- Added `MapFieldDirect` for direct assignment without flexible conversion.
-- Added `ForMemberDirect` compatibility alias.
-- Added unit tests for direct mapping success and direct mismatch failure.
-- Expanded performance lab with direct-only scenarios.
-- Added memory-leak loop checks with forced GC after repeated 100k-object mappings.
-- Added direct mapping documentation.
+Tested release candidate with runtime mapping, strict mapping, direct mapping, flexible conversion, nested projection, named projection, MVC sample, smoke tests, unit tests, and performance lab.

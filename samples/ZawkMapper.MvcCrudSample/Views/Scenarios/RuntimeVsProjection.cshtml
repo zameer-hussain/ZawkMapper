@@ -1,0 +1,27 @@
+@model RuntimeProjectionCompareDto
+@{
+    ViewData["Title"] = "Runtime Map and ProjectAs";
+}
+<h1 class="h3 mb-3">Runtime Map and ProjectAs for same source and DTO</h1>
+<p class="text-muted">This page shows why MapModel and ProjectModel are separate in 0.6.0-rc.2. Runtime mapping can use a normal C# method. Projection stays SQL friendly.</p>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Runtime MapModel result</h2>
+                <p><code>_mapper.Map&lt;Product, ProductRuntimeProjectionDto&gt;(product)</code></p>
+                <div class="display-box">@Model.RuntimeMapped.DisplayName</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">ProjectModel result</h2>
+                <p><code>.ProjectAs&lt;ProductRuntimeProjectionDto&gt;(_mapperConfig)</code></p>
+                <div class="display-box">@Model.Projected.DisplayName</div>
+            </div>
+        </div>
+    </div>
+</div>

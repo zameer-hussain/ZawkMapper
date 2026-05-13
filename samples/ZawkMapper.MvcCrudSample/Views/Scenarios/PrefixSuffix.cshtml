@@ -1,0 +1,50 @@
+@model IReadOnlyList<ProductPrefixSuffixDto>
+@{
+    ViewData["Title"] = "Prefix and suffix projection";
+    var prefix = (string?)ViewData["Prefix"] ?? "";
+    var suffix = (string?)ViewData["Suffix"] ?? "";
+}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h1 class="h3 mb-1">Prefix and suffix projection</h1>
+        <p class="text-muted mb-0">This page shows request-level values used inside a projection configuration.</p>
+    </div>
+</div>
+
+<form method="get" class="card mb-3">
+    <div class="card-body row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label">Prefix</label>
+            <input name="prefix" class="form-control" value="@prefix" />
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Suffix</label>
+            <input name="suffix" class="form-control" value="@suffix" />
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" type="submit">Apply</button>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Display Name</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td class="fw-semibold">@item.DisplayName</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

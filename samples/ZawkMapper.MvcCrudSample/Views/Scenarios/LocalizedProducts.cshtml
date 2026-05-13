@@ -1,0 +1,54 @@
+@model IReadOnlyList<ProductLocalizedDto>
+@{
+    var culture = (string?)ViewData["Culture"] ?? "sd";
+    var isSindhi = culture == "sd";
+    ViewData["Title"] = "English and Sindhi projection";
+}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h1 class="h3 mb-1">English and Sindhi projection</h1>
+        <p class="text-muted mb-0">This page uses named projections with constants. The variable name is <code>isSindhi</code> in the controller.</p>
+    </div>
+    <div class="btn-group">
+        <a class="btn @(isSindhi ? "btn-outline-primary" : "btn-primary")" asp-action="LocalizedProducts" asp-route-culture="en">English</a>
+        <a class="btn @(isSindhi ? "btn-primary" : "btn-outline-primary")" asp-action="LocalizedProducts" asp-route-culture="sd">Sindhi</a>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    Active projection name: <strong>@ViewData["ProjectionName"]</strong>. Use constants such as <code>ProductProjectionNames.Sindhi</code> instead of repeating strings manually.
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive @(isSindhi ? "sindhi-text" : "")" dir="@(isSindhi ? "rtl" : "ltr")">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>Culture</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Code</td>
+                        <td class="fw-semibold">@item.Name</td>
+                        <td>@item.Description</td>
+                        <td>@item.Price.ToString("N2")</td>
+                        <td>@item.CultureLabel</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a class="btn btn-outline-secondary" asp-action="StaticConfigCall">Same sample using AppMappingConfig.StaticConfigMethod()</a>
+</div>

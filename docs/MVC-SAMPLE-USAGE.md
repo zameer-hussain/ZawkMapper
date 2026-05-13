@@ -1,75 +1,33 @@
-# MVC CRUD Sample Usage
+# MVC sample usage
 
-This sample is added so you can test ZawkMapper in a real ASP.NET Core MVC project with EF Core and database records.
-
-## What this sample contains
-
-- ASP.NET Core MVC project
-- EF Core SQLite database
-- 2 DB tables: Customers and Orders
-- 1200 seeded customers
-- 2400 seeded orders
-- Runtime mapping: `CustomerCreateDto -> Customer`
-- Runtime mapping: `CustomerEditDto -> Customer`
-- Projection mapping: `Customer -> CustomerListDto`
-- Projection mapping: `Customer -> CustomerDetailsDto`
-- CRUD flow
-- SQL-based UPDATE
-- SQL-based soft DELETE
-
-## Run
+Run the sample:
 
 ```bash
-dotnet restore samples/ZawkMapper.MvcCrudSample/ZawkMapper.MvcCrudSample.csproj
 dotnet run --project samples/ZawkMapper.MvcCrudSample/ZawkMapper.MvcCrudSample.csproj
 ```
 
-Open the shown localhost URL.
+Open the browser URL shown by dotnet.
 
-## Static configuration style
+The sample includes normal CRUD and these ZawkMapper pages:
 
-The mapping configuration is in:
+1. English and Sindhi named projection
+2. Runtime MapModel and SQL-friendly ProjectModel for the same source and DTO
+3. Salary increment with request-level configuration
+4. Prefix and suffix with request-level configuration
+5. Static cached configuration call using `AppMappingConfig.StaticConfigMethod()`
 
-```text
-samples/ZawkMapper.MvcCrudSample/Mapping/AppMappingConfig.cs
-```
-
-Usage style:
-
-```csharp
-public static MapperConfiguration StaticConfigMethod() => CreateConfiguration();
-```
-
-Then:
+The sample uses `AddZawkMapper` in `Program.cs`.
 
 ```csharp
-var projected = db.Customers
-    .ProjectTo<CustomerListDto>(AppMappingConfig.StaticConfigMethod())
-    .ToList();
+builder.Services.AddZawkMapper(cfg =>
+{
+    cfg.AddProfilesFromAssembly(typeof(ProductMappingProfile).Assembly);
+});
 ```
 
-In real projects, create the config once in DI and reuse it instead of creating it per query.
+This already registers `IObjectMapper`. Do not register it again unless you are manually creating the configuration.
 
-## Runtime map usage
 
-```csharp
-var entity = mapper.Map<CustomerCreateDto, Customer>(dto)!;
-```
+## Global filter note
 
-## Projection usage
-
-```csharp
-var list = await db.Customers
-    .ProjectTo<CustomerListDto>(mapperConfiguration)
-    .ToListAsync();
-```
-
-## Important note about UPDATE/DELETE
-
-This sample uses SQLite to avoid SQL Server setup. Therefore it uses `SqliteParameter`.
-
-In your main SQL Server project, use the same pattern with:
-
-```csharp
-new SqlParameter("@Name", value)
-```
+The sample uses EF Core global query filters for soft delete. Because of that, the customer projection does not repeat `o => !o.IsDeleted` inside `ProjectModel`. This keeps the generated SQL clean and avoids duplicate filter conditions.

@@ -1,55 +1,84 @@
-# Getting Started with ZawkMapper
+# Getting started
 
-ZawkMapper helps .NET developers map models, DTOs, and query projections with clean configuration.
-
-## Install
-
-For prerelease versions, enable **Include prerelease** in Visual Studio NuGet Package Manager.
+Install the package:
 
 ```bash
 dotnet add package ZawkMapper --prerelease
 ```
 
-## Create configuration
+Create a profile:
 
 ```csharp
-var config = new MapperConfiguration(cfg =>
+public sealed class ProductMappingProfile : MappingProfile
 {
-    cfg.MapModel<CustomerCreateDto, Customer>()
-       .MapFieldStrict(dest => dest.Email, src => src.Email)
-       .MapField(dest => dest.IsPremium, src => src.IsPremium);
+    public override void Configure(MapperConfiguration cfg)
+    {
+        cfg.MapModel<ProductCreateDto, Product>()
+            .MapField(d => d.NameEn, s => s.Name)
+            .MapField(d => d.Price, s => s.Price);
 
-    cfg.ProjectModel<Customer, CustomerListDto>()
-       .MapFieldStrict(dest => dest.CustomerId, src => src.Id)
-       .MapFieldStrict(dest => dest.DisplayName, src => src.FullName);
+        cfg.ProjectModel<Product, ProductListDto>()
+            .MapField(d => d.Id, s => s.Id)
+            .MapField(d => d.Name, s => s.NameEn)
+            .MapField(d => d.Price, s => s.Price);
+    }//Configure
+}//ProductMappingProfile
+```
+
+Register ZawkMapper in `Program.cs`:
+
+```csharp
+builder.Services.AddZawkMapper(cfg =>
+{
+    cfg.AddProfilesFromAssembly(typeof(ProductMappingProfile).Assembly);
 });
 ```
 
-## Runtime mapping
+Inject runtime mapper and configuration where needed:
 
 ```csharp
-var mapper = new ObjectMapper(config);
-var entity = mapper.Map<CustomerCreateDto, Customer>(dto);
+public sealed class ProductService
+{
+    private readonly IObjectMapper _mapper;
+    private readonly MapperConfiguration _mapperConfig;
+    private readonly AppDbContext _db;
+
+    public ProductService(
+        IObjectMapper mapper,
+        MapperConfiguration mapperConfig,
+        AppDbContext db)
+    {
+        _mapper = mapper;
+        _mapperConfig = mapperConfig;
+        _db = db;
+    }//ProductService
+
+    public Product MapCreateDto(ProductCreateDto dto)
+    {
+        return _mapper.Map<ProductCreateDto, Product>(dto)!;
+    }//MapCreateDto
+
+    public Task<List<ProductListDto>> GetListAsync()
+    {
+        return _db.Products
+            .ProjectAs<ProductListDto>(_mapperConfig)
+            .ToListAsync();
+    }//GetListAsync
+}//ProductService
 ```
 
-## Query projection
+You can also pass a cached configuration method directly:
 
 ```csharp
-var list = db.Customers
-    .ProjectAs<CustomerListDto>(config)
-    .ToList();
+var products = await db.Products
+    .ProjectAs<ProductListDto>(AppMappingConfig.StaticConfigMethod())
+    .ToListAsync();
 ```
 
+Use this pattern when `StaticConfigMethod()` simply returns the same cached `MapperConfiguration` object.
 
-## Strict, direct, and flexible mapping
+## Credits
 
-```csharp
-cfg.MapModel<User, UserDto>()
-   .MapFieldStrict(dest => dest.Email, src => src.Email)
-   .MapFieldDirect(dest => dest.FullName, src => src.FullName)
-   .MapField(dest => dest.RoleName, src => src.Role);
-```
+Developer and founder: Zameer Hussain Vighio.
 
-- Use `MapFieldStrict` for compile-time same-type safety.
-- Use `MapFieldDirect` for direct assignment without conversion.
-- Use `MapField` when flexible conversion is intended.
+Co-developer and contributor: Mr Aqib Ali Abbasi.

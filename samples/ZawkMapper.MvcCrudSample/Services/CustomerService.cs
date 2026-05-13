@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ZawkMapper.Abstractions;
 using ZawkMapper.Extensions;
 using ZawkMapper.MvcCrudSample.Dtos;
+using ZawkMapper.Configuration;
 using ZawkMapper.MvcCrudSample.Mapping;
 using ZawkMapper.MvcCrudSample.Models;
 using ZawkMapper.MvcCrudSample.Repositories;
@@ -12,14 +13,17 @@ public sealed class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository _repository;
     private readonly IObjectMapper _mapper;
+    private readonly MapperConfiguration _mapperConfig;
 
     public CustomerService(
         ICustomerRepository repository,
-        IObjectMapper mapper)
+        IObjectMapper mapper,
+        MapperConfiguration mapperConfig)
     {
         _repository = repository;
         _mapper = mapper;
-    }
+        _mapperConfig = mapperConfig;
+    }//CustomerService
 
     public async Task<IReadOnlyList<CustomerListDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -27,7 +31,7 @@ public sealed class CustomerService : ICustomerService
         return await _repository.Query()
             .OrderByDescending(x => x.Id)
             .Take(200)
-            .ProjectAs<CustomerListDto>(AppMappingConfig.StaticConfigMethod())
+            .ProjectAs<CustomerListDto>(_mapperConfig)
             .ToListAsync(cancellationToken);
     }
 
@@ -35,7 +39,7 @@ public sealed class CustomerService : ICustomerService
     {
         return _repository.Query()
             .Where(x => x.Id == id)
-            .ProjectAs<CustomerDetailsDto>(AppMappingConfig.StaticConfigMethod())
+            .ProjectAs<CustomerDetailsDto>(_mapperConfig)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -43,7 +47,7 @@ public sealed class CustomerService : ICustomerService
     {
         return _repository.Query()
             .Where(x => x.Id == id)
-            .ProjectAs<CustomerEditDto>(AppMappingConfig.StaticConfigMethod(), "Edit")
+            .ProjectAs<CustomerEditDto>(_mapperConfig, CustomerProjectionNames.Edit)
             .FirstOrDefaultAsync(cancellationToken);
     }
 

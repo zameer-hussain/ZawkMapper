@@ -1,0 +1,43 @@
+@model IReadOnlyList<EmployeeSalaryDto>
+@{
+    ViewData["Title"] = "Salary increment projection";
+    var increment = (decimal)(ViewData["IncrementPercent"] ?? 10m);
+}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h1 class="h3 mb-1">Salary increment projection</h1>
+        <p class="text-muted mb-0">This page creates scenario-level configuration because the increment value comes from the request.</p>
+    </div>
+    <form method="get" class="d-flex gap-2">
+        <input name="incrementPercent" class="form-control" style="max-width: 120px" value="@increment" />
+        <button class="btn btn-primary" type="submit">Apply</button>
+    </form>
+</div>
+
+<div class="alert alert-warning">Current increment: <strong>@increment.ToString("N2")%</strong>. This is valid ZawkMapper usage when rules depend on runtime values.</div>
+
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Current Salary</th>
+                    <th>Projected Salary</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.FullName</td>
+                    <td>@item.Department</td>
+                    <td>@item.CurrentSalary.ToString("N2")</td>
+                    <td class="fw-semibold">@item.ProjectedSalary.ToString("N2")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

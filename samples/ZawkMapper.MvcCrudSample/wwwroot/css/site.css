@@ -2,3 +2,6 @@ body { background: #f6f8fb; }
 .card { border: 0; border-radius: 1rem; box-shadow: 0 8px 30px rgba(15, 23, 42, .08); }
 .table thead th { white-space: nowrap; }
 .badge-soft { background: #eef2ff; color: #3730a3; }
+.sindhi-text { font-size: 1.08rem; line-height: 1.9; }
+.display-box { background: #f8fafc; border-radius: .75rem; padding: 1rem; font-size: 1.1rem; }
+code { color: #0f172a; }

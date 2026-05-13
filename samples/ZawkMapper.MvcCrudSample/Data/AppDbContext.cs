@@ -9,6 +9,8 @@ public sealed class AppDbContext : DbContext
 
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Order> Orders => Set<Order>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Employee> Employees => Set<Employee>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +40,28 @@ public sealed class AppDbContext : DbContext
                 .WithMany(x => x.Orders)
                 .HasForeignKey(x => x.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.Code).IsUnique();
+            entity.HasQueryFilter(x => !x.IsDeleted);
+            entity.Property(x => x.Code).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.NameEn).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.NameSd).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.DescriptionEn).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.DescriptionSd).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Price).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<Employee>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasQueryFilter(x => !x.IsDeleted);
+            entity.Property(x => x.FullName).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Department).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Salary).HasPrecision(18, 2);
         });
     }
 }
