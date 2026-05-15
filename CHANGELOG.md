@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.6.0
+
+### Stable release
+
+This is the first stable 0.6.0 release after the 0.6.0 release candidate feedback period.
+
+### Changed
+
+`MapModel` and `ProjectModel` are handled as separate registration types.
+
+A duplicate `MapModel` for the same source, destination, and name still throws.
+
+A duplicate `ProjectModel` for the same source, destination, and name still throws.
+
+One `MapModel` and one `ProjectModel` for the same source, destination, and name are allowed.
+
+`ProjectAs` uses `ProjectModel` first. If no projection exists, it can reuse `MapModel` when the mapping rules are projection-safe.
+
+MVC sample projection maps avoid repeating `IsDeleted` checks where EF Core global query filters already apply them.
+
+### Added
+
+Clearer XML documentation for public APIs.
+
+Clearer duplicate and missing configuration error messages.
+
+MVC sample scenarios for English and Sindhi named projections, runtime mapping versus projection, salary increment, prefix and suffix, and static cached configuration usage.
+
+### Guidance
+
+Use constants or static readonly values for map/projection names to avoid spelling mistakes.
+
+Use cached app-level configuration for reusable rules.
+
+Use named projections for finite choices such as English, Sindhi, list, detail, public, or admin.
+
+Use scenario-level configuration when the mapping expression depends on request values such as salary increment percentage, prefix, or suffix.
+
+If an entity already has an EF Core global query filter, avoid writing the same filter again inside `ProjectModel` unless you intentionally want that extra condition.
+
+
 ## 0.6.0-rc.2
 
 ### Changed

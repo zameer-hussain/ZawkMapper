@@ -1,6 +1,6 @@
 # Runtime mapping and projection
 
-ZawkMapper 0.6.0-rc.2 keeps runtime mapping and query projection as separate registrations.
+ZawkMapper 0.6.0 keeps runtime mapping and query projection as separate registrations.
 
 `MapModel` is used by runtime `Map`.
 
