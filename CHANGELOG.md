@@ -1,36 +1,62 @@
 # Changelog
 
+## 0.6.1-rc.1
+
+### Release candidate
+
+This release candidate focuses on runtime object mapping performance, lower allocation, clearer public documentation, package metadata quality, and stable `ProjectAs` projection behavior.
+
+### Changed
+
+- Runtime `MapModel` execution now uses cached runtime plans for repeated mapping calls.
+- Same-type runtime members can avoid unnecessary conversion work.
+- Simple runtime maps avoid creating extra path-tracking state when it is not needed.
+- Runtime collection conversion preallocates destination lists when the source count is known.
+- `MappingContext.Items` is lazy and does not allocate unless a developer actually uses it.
+- Internal map lookup keys use a readonly struct to reduce hot-path allocation.
+- Public docs now explain when to use `MapFieldStrict`, `MapFieldDirect`, and `MapField`.
+- Docs are split into public docs and private owner/developer notes.
+- README and package wording now include clearer .NET object mapper, C# DTO mapping, AutoMapper alternative, EF Core projection, and IQueryable projection wording.
+
+### Guidance
+
+Use `MapFieldStrict` for same-type member mapping when possible.
+
+Use `MapField` for runtime conversion, computed values, nested object mapping, and collection bridges.
+
+For a collection bridge such as `List<OrderItem>` to `List<OrderLineDto>`, use `MapField` on the parent collection member and define a separate child map for `OrderItem` to `OrderLineDto`.
+
+`ProjectAs` projection behavior is intentionally preserved and should remain provider-friendly for EF Core `IQueryable` scenarios.
+
+### Validation before publish
+
+Run restore, release build, smoke tests, unit-style tests, performance lab, MVC sample, and the external comparison benchmark before publishing.
+
 ## 0.6.0
 
 ### Stable release
 
-This is the first stable 0.6.0 release after the 0.6.0 release candidate feedback period.
+This was the first stable 0.6.0 release after the 0.6.0 release-candidate feedback period.
 
 ### Changed
 
-`MapModel` and `ProjectModel` are handled as separate registration types.
-
-A duplicate `MapModel` for the same source, destination, and name still throws.
-
-A duplicate `ProjectModel` for the same source, destination, and name still throws.
-
-One `MapModel` and one `ProjectModel` for the same source, destination, and name are allowed.
-
-`ProjectAs` uses `ProjectModel` first. If no projection exists, it can reuse `MapModel` when the mapping rules are projection-safe.
-
-MVC sample projection maps avoid repeating `IsDeleted` checks where EF Core global query filters already apply them.
+- `MapModel` and `ProjectModel` are handled as separate registration types.
+- Duplicate `MapModel` registrations for the same source, destination, and name still throw.
+- Duplicate `ProjectModel` registrations for the same source, destination, and name still throw.
+- One `MapModel` and one `ProjectModel` for the same source, destination, and name are allowed.
+- `ProjectAs` uses `ProjectModel` first.
+- If no projection exists, `ProjectAs` can reuse `MapModel` when the mapping rules are projection-safe.
+- MVC sample projection maps avoid repeating `IsDeleted` checks where EF Core global query filters already apply them.
 
 ### Added
 
-Clearer XML documentation for public APIs.
-
-Clearer duplicate and missing configuration error messages.
-
-MVC sample scenarios for English and Sindhi named projections, runtime mapping versus projection, salary increment, prefix and suffix, and static cached configuration usage.
+- Clearer XML documentation for public APIs.
+- Clearer duplicate and missing configuration error messages.
+- MVC sample scenarios for English and Sindhi named projections, runtime mapping versus projection, salary increment, prefix and suffix, and static cached configuration usage.
 
 ### Guidance
 
-Use constants or static readonly values for map/projection names to avoid spelling mistakes.
+Use constants or static readonly values for map and projection names to avoid spelling mistakes.
 
 Use cached app-level configuration for reusable rules.
 
@@ -40,63 +66,6 @@ Use scenario-level configuration when the mapping expression depends on request 
 
 If an entity already has an EF Core global query filter, avoid writing the same filter again inside `ProjectModel` unless you intentionally want that extra condition.
 
-
-## 0.6.0-rc.2
-
-### Changed
-
-MVC sample projection maps now avoid repeating `IsDeleted` checks where EF Core global query filters already apply them.
-
-Runtime cycle detection uses a cached path key on each map definition, so repeated runtime mapping avoids building that key again and again.
-
-README and docs now include updated project credits.
-
-### Guidance
-
-If an entity already has an EF Core global query filter, avoid writing the same filter again inside `ProjectModel` unless you intentionally want that extra condition in the expression.
-
-Use constants or static readonly values for map/projection names to avoid spelling mistakes.
-
-Use cached app-level configuration for reusable rules, named projections for finite choices, and scenario-level configuration when the mapping expression depends on request values.
-
-## 0.6.0-rc.1
-
-### Changed
-
-`MapModel` and `ProjectModel` are now separate registration types.
-
-A duplicate `MapModel` for the same source, destination, and name still throws.
-
-A duplicate `ProjectModel` for the same source, destination, and name still throws.
-
-One `MapModel` and one `ProjectModel` for the same source, destination, and name are now allowed.
-
-`ProjectAs` uses `ProjectModel` first. If no projection exists, it can reuse `MapModel` when the mapping rules are projection-safe.
-
-### Added
-
-Clearer XML documentation for public APIs so method hover text explains source type, destination type, and usage.
-
-Clearer duplicate and missing configuration error messages.
-
-MVC sample pages for English and Sindhi named projection, runtime map versus projection, salary increment, prefix and suffix, and static cached configuration call.
-
-Unit tests for separate runtime and projection registration, projection fallback, Sindhi named projection, and scenario-level request values.
-
-Performance lab checks for runtime plus projection on the same pair, named Sindhi projection, and scenario-level salary increment projection.
-
-### Guidance
-
-Use constants or static readonly values for map/projection names to avoid spelling mistakes.
-
-Keep package behavior generic. Do not add built-in language enums to the package.
-
-Use cached app-level configuration for reusable rules.
-
-Use named projections for finite choices such as English, Sindhi, list, detail, public, or admin.
-
-Use scenario-level configuration when the mapping expression itself depends on request values such as salary increment percentage, prefix, or suffix.
-
 ## 0.5.0-rc.4
 
-Tested release candidate with runtime mapping, strict mapping, direct mapping, flexible conversion, nested projection, named projection, MVC sample, smoke tests, unit tests, and performance lab.
+Tested release candidate with runtime mapping, strict mapping, direct mapping, flexible conversion, nested projection, named projection, MVC sample, smoke tests, unit-style tests, and performance lab.

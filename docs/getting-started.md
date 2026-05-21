@@ -1,84 +1,63 @@
 # Getting started
 
-Install the package:
+ZawkMapper maps objects in memory and projects database queries into DTOs.
+
+Install:
 
 ```bash
-dotnet add package ZawkMapper --prerelease
+dotnet add package ZawkMapper
 ```
 
-Create a profile:
+## Runtime mapping
+
+Use `MapModel` when the source object is already loaded in memory.
 
 ```csharp
-public sealed class ProductMappingProfile : MappingProfile
+using ZawkMapper.Configuration;
+using ZawkMapper.Core;
+
+var config = new MapperConfiguration(cfg =>
 {
-    public override void Configure(MapperConfiguration cfg)
-    {
-        cfg.MapModel<ProductCreateDto, Product>()
-            .MapField(d => d.NameEn, s => s.Name)
-            .MapField(d => d.Price, s => s.Price);
-
-        cfg.ProjectModel<Product, ProductListDto>()
-            .MapField(d => d.Id, s => s.Id)
-            .MapField(d => d.Name, s => s.NameEn)
-            .MapField(d => d.Price, s => s.Price);
-    }//Configure
-}//ProductMappingProfile
-```
-
-Register ZawkMapper in `Program.cs`:
-
-```csharp
-builder.Services.AddZawkMapper(cfg =>
-{
-    cfg.AddProfilesFromAssembly(typeof(ProductMappingProfile).Assembly);
+    cfg.MapModel<Customer, CustomerDto>()
+        .MapFieldStrict(d => d.Id, s => s.Id)
+        .MapFieldStrict(d => d.Name, s => s.Name)
+        .MapField(d => d.BalanceText, s => s.Balance);
 });
+
+var mapper = new ObjectMapper(config);
+var dto = mapper.Map<Customer, CustomerDto>(customer);
 ```
 
-Inject runtime mapper and configuration where needed:
+## Projection
+
+Use `ProjectModel` and `ProjectAs` when you want a query provider such as EF Core to select DTO fields.
 
 ```csharp
-public sealed class ProductService
+using ZawkMapper.Configuration;
+using ZawkMapper.Extensions;
+
+var config = new MapperConfiguration(cfg =>
 {
-    private readonly IObjectMapper _mapper;
-    private readonly MapperConfiguration _mapperConfig;
-    private readonly AppDbContext _db;
+    cfg.ProjectModel<Customer, CustomerDto>()
+        .MapField(d => d.Id, s => s.Id)
+        .MapField(d => d.Name, s => s.Name);
+});
 
-    public ProductService(
-        IObjectMapper mapper,
-        MapperConfiguration mapperConfig,
-        AppDbContext db)
-    {
-        _mapper = mapper;
-        _mapperConfig = mapperConfig;
-        _db = db;
-    }//ProductService
-
-    public Product MapCreateDto(ProductCreateDto dto)
-    {
-        return _mapper.Map<ProductCreateDto, Product>(dto)!;
-    }//MapCreateDto
-
-    public Task<List<ProductListDto>> GetListAsync()
-    {
-        return _db.Products
-            .ProjectAs<ProductListDto>(_mapperConfig)
-            .ToListAsync();
-    }//GetListAsync
-}//ProductService
-```
-
-You can also pass a cached configuration method directly:
-
-```csharp
-var products = await db.Products
-    .ProjectAs<ProductListDto>(AppMappingConfig.StaticConfigMethod())
+var customers = await db.Customers
+    .ProjectAs<CustomerDto>(config)
     .ToListAsync();
 ```
 
-Use this pattern when `StaticConfigMethod()` simply returns the same cached `MapperConfiguration` object.
+## Rule of thumb
 
-## Credits
+| Need | Use |
+|---|---|
+| map loaded objects | `MapModel` |
+| project database query | `ProjectModel` + `ProjectAs` |
+| same-type runtime fields | `MapFieldStrict` |
+| assignable runtime fields | `MapFieldDirect` |
+| conversion, computed fields, nested maps | `MapField` |
 
-Developer and founder: Zameer Hussain Vighio.
+## Reuse configuration
 
-Co-developer and contributor: Mr Aqib Ali Abbasi.
+Create mapping configuration once and reuse it. In ASP.NET Core, use dependency injection. In small apps, use a static cached configuration.

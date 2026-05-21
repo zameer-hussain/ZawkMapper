@@ -1,42 +1,30 @@
-# Nested Mapping
+# Nested mapping
 
-ZawkMapper can reuse configured child projections in parent projections.
+ZawkMapper supports nested object and collection mapping when a child map is registered.
 
-## Child projection
-
-```csharp
-cfg.ProjectModel<Order, OrderListDto>()
-   .MapFieldStrict(dest => dest.OrderId, src => src.Id)
-   .MapFieldStrict(dest => dest.OrderNumber, src => src.OrderNumber);
-```
-
-## Parent projection with child collection
+## Nested object
 
 ```csharp
-cfg.ProjectModel<Customer, CustomerDetailsDto>()
-   .MapFieldStrict(dest => dest.CustomerId, src => src.Id)
-   .MapField(dest => dest.Orders, src => src.Orders
-       .Where(o => !o.IsDeleted)
-       .OrderByDescending(o => o.OrderDateUtc)
-       .Take(10));
+cfg.MapModel<Customer, CustomerDto>()
+    .MapField(d => d.Address, s => s.Address);
+
+cfg.MapModel<Address, AddressDto>()
+    .MapFieldStrict(d => d.City, s => s.City)
+    .MapFieldStrict(d => d.Country, s => s.Country);
 ```
 
-## Parent projection with single child
+## Nested collection
+
+Use `MapField` for the parent collection bridge, then use strict/direct mapping inside the child item map where possible.
 
 ```csharp
-cfg.ProjectModel<Customer, CustomerDashboardDto>()
-   .MapField(dest => dest.LastOrder, src => src.Orders
-       .Where(o => !o.IsDeleted)
-       .OrderByDescending(o => o.OrderDateUtc)
-       .FirstOrDefault());
+cfg.MapModel<Order, OrderDetailDto>()
+    .MapField(d => d.Lines, s => s.Items);
+
+cfg.MapModel<OrderItem, OrderLineDto>()
+    .MapFieldStrict(d => d.ProductName, s => s.ProductName)
+    .MapFieldStrict(d => d.Quantity, s => s.Quantity)
+    .MapFieldStrict(d => d.UnitPrice, s => s.UnitPrice);
 ```
 
-## Named child projection
-
-Use named child projections only when needed.
-
-```csharp
-.MapField(dest => dest.Orders,
-    src => src.Orders.Where(o => !o.IsDeleted),
-    opt => opt.UseProjection("Small"));
-```
+`List<OrderItem>` and `List<OrderLineDto>` are different member types. That is why the parent collection bridge uses `MapField`.

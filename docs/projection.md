@@ -1,71 +1,39 @@
 # Projection
 
-Projection is used when you want an `IQueryable` to return DTOs directly.
+Projection is for `IQueryable` queries. It lets the database provider select DTO fields instead of loading full entities first.
 
 ```csharp
-var products = await db.Products
-    .ProjectAs<ProductDto>(_mapperConfig)
+var customers = await db.Customers
+    .ProjectAs<CustomerListDto>(_mapperConfig)
     .ToListAsync();
 ```
-
-You can also pass a cached configuration method:
-
-```csharp
-var products = await db.Products
-    .ProjectAs<ProductDto>(AppMappingConfig.StaticConfigMethod())
-    .ToListAsync();
-```
-
-Both are fine when the method returns the same cached configuration object.
 
 ## Register projection rules
 
 ```csharp
-cfg.ProjectModel<Product, ProductDto>()
+cfg.ProjectModel<Customer, CustomerListDto>()
     .MapField(d => d.Id, s => s.Id)
-    .MapField(d => d.Name, s => s.NameEn);
+    .MapField(d => d.Name, s => s.Name)
+    .MapField(d => d.OrdersCount, s => s.Orders.Count());
 ```
 
-`TSource` is the source type. Usually this is your database entity.
+## Runtime map and projection can be different
 
-`TDestination` is the destination type. Usually this is your DTO.
-
-## ProjectModel and MapModel
-
-`ProjectModel` is checked first by `ProjectAs`.
-
-If no `ProjectModel` exists, `ProjectAs` can reuse `MapModel` when the rules are projection-safe.
+Runtime mapping can use normal C# code. Projection should use expressions that the query provider can translate.
 
 ```csharp
 cfg.MapModel<Product, ProductDto>()
-    .MapField(d => d.Name, s => s.NameEn);
-```
-
-This can still work:
-
-```csharp
-var products = await db.Products
-    .ProjectAs<ProductDto>(_mapperConfig)
-    .ToListAsync();
-```
-
-When runtime and projection rules are different, register both:
-
-```csharp
-cfg.MapModel<Product, ProductDto>()
-    .MapField(d => d.Name, s => SomeNormalCSharpMethod(s.NameEn));
+    .MapField(d => d.Name, s => FormatProductName(s.NameEn));
 
 cfg.ProjectModel<Product, ProductDto>()
     .MapField(d => d.Name, s => s.NameEn);
 ```
 
-Runtime `Map` uses `MapModel`.
-
-`ProjectAs` uses `ProjectModel`.
+`ProjectAs` uses `ProjectModel` first. If no `ProjectModel` exists, it may fall back to `MapModel` when the mapping is projection-safe.
 
 ## Named projections
 
-Use names for list/detail/language/scenario choices.
+Named projections are useful for list/detail/edit screens, public/admin views, and language-based fields.
 
 ```csharp
 public static class ProductProjectionNames
@@ -76,8 +44,13 @@ public static class ProductProjectionNames
 ```
 
 ```csharp
+cfg.ProjectModel<Product, ProductDto>(ProductProjectionNames.English)
+    .MapField(d => d.Name, s => s.NameEn)
+    .MapField(d => d.Description, s => s.DescriptionEn);
+
 cfg.ProjectModel<Product, ProductDto>(ProductProjectionNames.Sindhi)
-    .MapField(d => d.Name, s => s.NameSd);
+    .MapField(d => d.Name, s => s.NameSd)
+    .MapField(d => d.Description, s => s.DescriptionSd);
 ```
 
 ```csharp
@@ -90,20 +63,25 @@ var products = await db.Products
     .ToListAsync();
 ```
 
-## EF Core global filters
+ZawkMapper does not include built-in language enums. Names are developer-owned strings, so constants are recommended.
 
-If your entity already has an EF Core global query filter, do not repeat the same filter inside `ProjectModel` unless you intentionally want it in the expression.
+## EF Core global query filters
 
-For example, if `Order` already has `HasQueryFilter(x => !x.IsDeleted)`, this is enough:
+If EF Core already has a global query filter, avoid repeating the same filter inside the projection unless you need it on purpose.
+
+```csharp
+modelBuilder.Entity<Order>()
+    .HasQueryFilter(x => !x.IsDeleted);
+```
+
+Use:
 
 ```csharp
 .MapField(d => d.OrdersCount, s => s.Orders.Count())
 ```
 
-Avoid repeating the same filter like this in that case:
+Instead of repeating:
 
 ```csharp
-.MapField(d => d.OrdersCount, s => s.Orders.Count(o => !o.IsDeleted))
+.MapField(d => d.OrdersCount, s => s.Orders.Count(x => !x.IsDeleted))
 ```
-
-ZawkMapper keeps your expression as you wrote it. EF Core applies its own global filters later while building SQL.

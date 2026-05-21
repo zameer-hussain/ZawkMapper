@@ -1,47 +1,19 @@
-# Direct Mapping
+# Direct mapping
 
-`MapFieldDirect` is for developers who want direct assignment without flexible conversion.
-
-Use it when the source value is already assignable to the destination member type and you want ZawkMapper to avoid conversion work.
+`MapFieldDirect` is for direct assignment when the source value is assignable to the destination member.
 
 ```csharp
-cfg.MapModel<User, UserDto>()
-   .MapFieldDirect(dest => dest.Id, src => src.Id)
-   .MapFieldDirect(dest => dest.Email, src => src.Email);
+cfg.MapModel<Customer, CustomerDto>()
+    .MapFieldDirect(d => d.Id, s => s.Id)
+    .MapFieldDirect(d => d.Name, s => s.Name);
 ```
 
-## Behavior
+Use `MapFieldStrict` when you want compile-time same-type safety.
 
-`MapFieldDirect` does not try to convert values.
-
-If the source value cannot be assigned to the destination member, ZawkMapper throws a clear `MappingException`.
+Use `MapField` when conversion or computed values are needed.
 
 ```csharp
-cfg.MapModel<UserTextId, UserDto>()
-   .MapFieldDirect(dest => dest.Id, src => src.Id);
+cfg.MapModel<Customer, CustomerDto>()
+    .MapFieldStrict(d => d.Id, s => s.Id)
+    .MapField(d => d.BalanceText, s => s.Balance);
 ```
-
-If `UserTextId.Id` is `string` and `UserDto.Id` is `long`, this will fail at runtime with a clear message.
-
-Use this instead when conversion is intentional:
-
-```csharp
-cfg.MapModel<UserTextId, UserDto>()
-   .MapField(dest => dest.Id, src => src.Id);
-```
-
-## Strict vs Direct vs Flexible
-
-| Method | Meaning |
-|---|---|
-| `MapFieldStrict` | compile-time same-type safety |
-| `MapFieldDirect` | direct assignment, no conversion |
-| `MapField` | flexible runtime conversion |
-
-## Recommended usage
-
-Use `MapFieldStrict` when you want maximum compile-time safety.
-
-Use `MapFieldDirect` when types are already compatible and you want direct assignment behavior.
-
-Use `MapField` when you intentionally want ZawkMapper to help with conversion, such as string to long, enum to string, or int to enum.

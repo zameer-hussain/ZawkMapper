@@ -1,59 +1,35 @@
-# Strict Mapping
+# Strict mapping
 
-ZawkMapper supports both flexible mapping and compile-time strict mapping.
+`MapFieldStrict` is for same-type member mapping with compile-time safety.
 
-## When to use MapFieldStrict
-
-Use `MapFieldStrict` when source and destination values must have the same type.
+Use it when the destination member type and source expression type match.
 
 ```csharp
-cfg.MapModel<User, UserDto>()
-   .MapFieldStrict(dest => dest.Id, src => src.Id)
-   .MapFieldStrict(dest => dest.Email, src => src.Email);
+cfg.MapModel<Product, ProductDto>()
+    .MapFieldStrict(d => d.Id, s => s.Id)
+    .MapFieldStrict(d => d.Name, s => s.Name)
+    .MapFieldStrict(d => d.Price, s => s.Price);
 ```
 
-This is useful for sensitive or important fields where silent conversion is not desired.
+Best use cases:
 
-## Compile-time safety
+- IDs
+- names
+- dates
+- numeric values with the same type
+- booleans
+- enum fields with the same enum type
 
-`MapFieldStrict` is intentionally designed with one generic member type. That means both expressions must match the same type.
-
-This should compile:
+Do not use `MapFieldStrict` for type conversion.
 
 ```csharp
-.MapFieldStrict(dest => dest.Email, src => src.Email)
+cfg.MapModel<Product, ProductDto>()
+    .MapField(d => d.PriceText, s => s.Price);
 ```
 
-This should not compile if `dest.Id` is `long` and `src.Id` is `string`:
+Do not use it for parent collection bridges when item types differ.
 
 ```csharp
-.MapFieldStrict(dest => dest.Id, src => src.Id)
-```
-
-## When to use MapField
-
-Use `MapField` when flexible mapping is wanted.
-
-```csharp
-cfg.MapModel<UserCreateDto, User>()
-   .MapField(dest => dest.Id, src => src.Id);
-```
-
-Runtime mapping can try safe conversion if enabled.
-
-## Enum handling
-
-Runtime mapping can convert common enum scenarios:
-
-- enum to string
-- enum to numeric value
-- numeric value to enum
-- string name to enum where possible
-
-For database projection, prefer explicit SQL-friendly expressions.
-
-```csharp
-cfg.ProjectModel<User, UserDto>()
-   .MapField(dest => dest.StatusText, src =>
-       src.Status == UserStatus.Active ? "Active" : "Unknown");
+cfg.MapModel<Order, OrderDetailDto>()
+    .MapField(d => d.Lines, s => s.Items);
 ```

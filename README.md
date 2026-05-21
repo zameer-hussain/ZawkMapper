@@ -1,36 +1,18 @@
+# ZawkMapper
+
+**ZawkMapper** is a lightweight .NET object mapper and EF Core projection library for clean DTO mapping, fast runtime object mapping, nested mapping, collection mapping, and SQL-friendly `IQueryable` projection.
+
+It is built for developers who want simple mapping configuration without giving up projection support.
+
 <p align="center">
-  <img src="assets/zawkmapper-logo.png" alt="ZawkMapper Logo" width="720" />
+  <img src="assets/zawkmapper-logo.png" alt="ZawkMapper Logo" width="520" />
 </p>
 
-<h1 align="center">ZawkMapper</h1>
-
 <p align="center">
-  Fast object mapping and SQL-friendly projection for .NET.
-</p>
-
-<p align="center">
-  Built under <strong>ZawkTech</strong>
-  <br />
-  Developer and founder: <strong>Zameer Hussain Vighio</strong>
-  <br />
+  <strong>ZawkTech</strong><br />
+  Developer and founder: <strong>Zameer Hussain Vighio</strong><br />
   Co-developer and contributor: <strong>Mr Aqib Ali Abbasi</strong>
 </p>
-
-## What is ZawkMapper?
-
-ZawkMapper is a .NET mapping package for real project scenarios.
-
-It helps you map objects in memory and project database queries into DTOs with clean, readable configuration.
-
-Use it when you need:
-
-1. Entity to DTO mapping
-2. DTO to entity mapping
-3. SQL-friendly `IQueryable` projection
-4. Named maps and named projections
-5. Nested object and collection mapping
-6. Strict, direct, and flexible field mapping
-7. Cached configuration for better application performance
 
 ## Install
 
@@ -38,56 +20,104 @@ Use it when you need:
 dotnet add package ZawkMapper
 ```
 
-## Basic idea
-
-ZawkMapper has two main jobs.
-
-| Use case | Method |
-|---|---|
-| Runtime object mapping | `MapModel` |
-| Database query projection | `ProjectModel` |
-
-Runtime mapping is useful when data is already in memory.
-
-Projection is useful when you want EF Core or another query provider to select DTO fields directly from the database.
-
-## Quick example
-
-Register mapping rules once:
+## Quick runtime mapping
 
 ```csharp
+using ZawkMapper.Configuration;
+using ZawkMapper.Core;
+
 var config = new MapperConfiguration(cfg =>
 {
-    cfg.MapModel<CustomerCreateDto, Customer>()
-        .MapField(d => d.FullName, s => s.FullName)
-        .MapField(d => d.IsPremium, s => s.IsPremium);
+    cfg.MapModel<Customer, CustomerDto>()
+        .MapFieldStrict(d => d.Id, s => s.Id)
+        .MapFieldStrict(d => d.Name, s => s.Name)
+        .MapField(d => d.TotalText, s => s.Total);
+});
 
+var mapper = new ObjectMapper(config);
+var dto = mapper.Map<Customer, CustomerDto>(customer);
+```
+
+## Quick EF Core projection
+
+```csharp
+using ZawkMapper.Configuration;
+using ZawkMapper.Extensions;
+
+var config = new MapperConfiguration(cfg =>
+{
     cfg.ProjectModel<Customer, CustomerListDto>()
-        .MapField(d => d.CustomerId, s => s.Id)
-        .MapField(d => d.DisplayName, s => s.FullName)
+        .MapField(d => d.Id, s => s.Id)
+        .MapField(d => d.Name, s => s.Name)
         .MapField(d => d.OrdersCount, s => s.Orders.Count());
 });
-```
 
-Map an object in memory:
-
-```csharp
-var mapper = new ObjectMapper(config);
-
-var customer = mapper.Map<CustomerCreateDto, Customer>(request);
-```
-
-Project a query into a DTO:
-
-```csharp
 var customers = await db.Customers
     .ProjectAs<CustomerListDto>(config)
     .ToListAsync();
 ```
 
-## ASP.NET Core setup
+## Main features
 
-Register ZawkMapper in `Program.cs`:
+| Feature | Purpose |
+|---|---|
+| `MapModel` | Runtime object mapping |
+| `ProjectModel` | SQL-friendly query projection |
+| `ProjectAs` | Project `IQueryable` into DTOs |
+| `MapFieldStrict` | Same-type mapping with compile-time safety |
+| `MapFieldDirect` | Direct assignment when the value is assignable |
+| `MapField` | Flexible conversion, computed values, nested maps, and collection bridges |
+| Named maps/projections | Different output rules for list, detail, edit, language, public/admin screens |
+| Cached configuration | Reuse mapping plans for better performance |
+
+## Which field method should I use?
+
+Use this rule first:
+
+```text
+same source/destination type      -> MapFieldStrict
+assignable source/destination     -> MapFieldDirect
+conversion/computed/nested bridge -> MapField
+```
+
+Example:
+
+```csharp
+cfg.MapModel<OrderItem, OrderLineDto>()
+    .MapFieldStrict(d => d.ProductName, s => s.ProductName)
+    .MapFieldStrict(d => d.Quantity, s => s.Quantity)
+    .MapFieldStrict(d => d.UnitPrice, s => s.UnitPrice);
+```
+
+For a parent collection bridge, use `MapField` because the member types are different:
+
+```csharp
+cfg.MapModel<Order, OrderDetailDto>()
+    .MapField(d => d.Lines, s => s.Items);
+
+cfg.MapModel<OrderItem, OrderLineDto>()
+    .MapFieldStrict(d => d.ProductName, s => s.ProductName)
+    .MapFieldStrict(d => d.Quantity, s => s.Quantity)
+    .MapFieldStrict(d => d.UnitPrice, s => s.UnitPrice);
+```
+
+`List<OrderItem>` and `List<OrderLineDto>` are not the same member type, so `MapFieldStrict` is not the right parent bridge.
+
+## Runtime mapping and projection can be different
+
+Runtime mapping can use normal C# code. Projection must stay provider-friendly so EF Core can translate it to SQL.
+
+```csharp
+cfg.MapModel<Product, ProductDto>()
+    .MapField(d => d.Name, s => FormatName(s.NameEn));
+
+cfg.ProjectModel<Product, ProductDto>()
+    .MapField(d => d.Name, s => s.NameEn);
+```
+
+`ProjectAs` uses `ProjectModel` first. If no `ProjectModel` exists, it can fall back to `MapModel` when the mapping expression is projection-safe.
+
+## ASP.NET Core setup
 
 ```csharp
 builder.Services.AddZawkMapper(cfg =>
@@ -96,119 +126,16 @@ builder.Services.AddZawkMapper(cfg =>
 });
 ```
 
-`AddZawkMapper` registers:
+This registers:
 
 | Service | Lifetime |
 |---|---|
 | `MapperConfiguration` | Singleton |
 | `IObjectMapper` | Scoped |
 
-You do not need to manually register `IObjectMapper` when `AddZawkMapper` is used.
+## Named projections example
 
-## Using profiles
-
-Keep mapping rules in profile classes instead of putting everything in `Program.cs`.
-
-```csharp
-public sealed class CustomerMappingProfile : MappingProfile
-{
-    public override void Configure(MappingConfigurationExpression cfg)
-    {
-        cfg.MapModel<CustomerCreateDto, Customer>()
-            .MapField(d => d.FullName, s => s.FullName)
-            .MapField(d => d.IsPremium, s => s.IsPremium);
-
-        cfg.ProjectModel<Customer, CustomerListDto>()
-            .MapField(d => d.CustomerId, s => s.Id)
-            .MapField(d => d.DisplayName, s => s.FullName)
-            .MapField(d => d.OrdersCount, s => s.Orders.Count());
-    }//Configure
-}//CustomerMappingProfile
-```
-
-## Passing configuration to ProjectAs
-
-You can pass an injected configuration object:
-
-```csharp
-var products = await db.Products
-    .ProjectAs<ProductDto>(_mapperConfig)
-    .ToListAsync();
-```
-
-You can also use a static cached method:
-
-```csharp
-var products = await db.Products
-    .ProjectAs<ProductDto>(AppMappingConfig.StaticConfigMethod())
-    .ToListAsync();
-```
-
-Example cached configuration:
-
-```csharp
-public static class AppMappingConfig
-{
-    private static readonly Lazy<MapperConfiguration> Cached = new(() =>
-        new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfilesFromAssembly(typeof(AppMappingConfig).Assembly);
-        }));
-
-    public static MapperConfiguration StaticConfigMethod()
-    {
-        return Cached.Value;
-    }//StaticConfigMethod
-}//AppMappingConfig
-```
-
-Both styles are valid. The important point is to reuse configuration instead of rebuilding it again and again.
-
-## Runtime mapping and projection can be different
-
-Sometimes runtime mapping can use normal C# code, but database projection must stay SQL-friendly.
-
-```csharp
-cfg.MapModel<Product, ProductDto>()
-    .MapField(d => d.Name, s => SomeNormalCSharpMethod(s.NameEn));
-
-cfg.ProjectModel<Product, ProductDto>()
-    .MapField(d => d.Name, s => s.NameEn);
-```
-
-In this case:
-
-| Operation | Uses |
-|---|---|
-| `Map` | `MapModel` |
-| `ProjectAs` | `ProjectModel` |
-
-If `ProjectModel` is not registered, `ProjectAs` can reuse `MapModel` when the rules are safe for projection.
-
-## Field mapping options
-
-ZawkMapper gives you three field mapping styles.
-
-| Method | Best for |
-|---|---|
-| `MapFieldStrict` | Same-type mapping with compile-time safety |
-| `MapFieldDirect` | Fast direct assignment when types already match |
-| `MapField` | Flexible runtime conversion when needed |
-
-Example:
-
-```csharp
-cfg.MapModel<Product, ProductDto>()
-    .MapFieldStrict(d => d.Id, s => s.Id)
-    .MapFieldDirect(d => d.Code, s => s.Code)
-    .MapField(d => d.PriceText, s => s.Price);
-```
-
-## Named projections
-
-Use named projections when the same source and destination need different output rules.
-
-A common example is language-based fields.
+Named projections are useful when the same entity has different output rules.
 
 ```csharp
 public static class ProductProjectionNames
@@ -238,119 +165,42 @@ var products = await db.Products
     .ToListAsync();
 ```
 
-ZawkMapper does not include built-in language enums. Projection names are your project choice.
+ZawkMapper keeps names generic. Use constants in your project to avoid spelling mistakes.
 
-Using constants helps your team avoid spelling mistakes.
+## Performance notes
 
-## Request-level projection values
+ZawkMapper 0.6.1 focuses on runtime mapping speed, lower allocation, and stable `ProjectAs` projection behavior.
 
-Sometimes projection rules depend on the current request.
+General guidance:
 
-Examples:
+- reuse `MapperConfiguration`
+- use dependency injection or static cached configuration
+- use `MapFieldStrict` for same-type runtime fields
+- use `MapField` only where conversion, computed values, nested maps, or collection bridges are needed
+- use `ProjectAs` for database-backed lists and screens
+- keep runtime mapping and EF projection benchmarks separate
 
-1. Salary increment percentage
-2. Discount percentage
-3. Prefix or suffix
-4. Tenant-specific value
-5. Request-based display text
-
-For those cases, scenario-level configuration is valid.
-
-```csharp
-public static MapperConfiguration CreateSalaryProjectionConfig(decimal incrementPercent)
-{
-    return new MapperConfiguration(cfg =>
-    {
-        cfg.ProjectModel<Employee, EmployeeSalaryDto>()
-            .MapField(d => d.Id, s => s.Id)
-            .MapField(d => d.FullName, s => s.FullName)
-            .MapField(d => d.ProjectedSalary, s => s.Salary + (s.Salary * incrementPercent / 100));
-    });
-}//CreateSalaryProjectionConfig
-```
-
-```csharp
-var config = EmployeeMappingConfig.CreateSalaryProjectionConfig(request.IncrementPercent);
-
-var employees = await db.Employees
-    .ProjectAs<EmployeeSalaryDto>(config)
-    .ToListAsync();
-```
-
-For reusable rules, cached app-level configuration is usually better.
-
-For request-specific rules, scenario-level configuration gives more flexibility.
-
-## EF Core global filters
-
-If an entity already has an EF Core global query filter, avoid repeating the same condition inside `ProjectModel` unless you need it there on purpose.
-
-Example:
-
-```csharp
-modelBuilder.Entity<Order>()
-    .HasQueryFilter(x => !x.IsDeleted);
-```
-
-Use:
-
-```csharp
-.MapField(d => d.OrdersCount, s => s.Orders.Count())
-```
-
-Instead of:
-
-```csharp
-.MapField(d => d.OrdersCount, s => s.Orders.Count(x => !x.IsDeleted))
-```
-
-EF Core will apply the global filter when SQL is generated.
-
-## Compatibility aliases
-
-ZawkMapper has its own preferred API names.
-
-Preferred style:
-
-```csharp
-MapModel
-ProjectModel
-MapField
-ProjectAs
-```
-
-Compatibility aliases are also available for developers coming from other mapping libraries:
-
-```csharp
-CreateMap
-CreateProjection
-ForMember
-ForMemberStrict
-ForMemberDirect
-ProjectTo
-```
+Benchmarks depend on model shape, CPU, database provider, warmup, and query shape. Run your own benchmark for your own workload before making hard claims.
 
 ## Documentation
 
-Start here:
+Public docs:
 
-1. `docs/getting-started.md`
-2. `docs/projection.md`
-3. `docs/runtime-vs-projection.md`
-4. `docs/real-world-scenarios.md`
-5. `docs/dependency-injection.md`
-6. `docs/performance.md`
-7. `docs/0.6.0-notes.md`
+- `docs/public/getting-started.md`
+- `docs/public/projection.md`
+- `docs/public/runtime-vs-projection.md`
+- `docs/public/performance.md`
+- `docs/public/strict-mapping.md`
+- `docs/public/direct-mapping.md`
+- `docs/public/nested-mapping.md`
+- `docs/public/dependency-injection.md`
+- `docs/public/real-world-scenarios.md`
 
-For stable release details, read:
+Owner/developer notes are kept separately under:
 
-```text
-docs/0.6.0-notes.md
-```
+- `docs/private/`
 
 ## Supported targets
-
-ZawkMapper supports:
 
 | Target |
 |---|
