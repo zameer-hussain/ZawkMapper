@@ -1,51 +1,80 @@
 # Changelog
 
+## 0.6.1
+
+### Stable release
+
+ZawkMapper 0.6.1 promotes the tested 0.6.1 release candidate work to stable after public NuGet testing and benchmark validation.
+
+This release focuses on runtime object mapping performance, allocation reduction, stable EF Core projection behavior, clearer documentation, and stronger package metadata for discoverability as a .NET object mapper, C# DTO mapping library, AutoMapper alternative, and EF Core IQueryable projection tool.
+
+### Changed
+
+- Runtime `MapModel` execution uses a cached assignment plan for common mapping paths.
+- Directly assignable fields avoid unnecessary runtime conversion.
+- `MapField`, `MapFieldDirect`, and `MapFieldStrict` benefit from faster same-type member assignment paths where applicable.
+- `MapList` reuses one mapping context and preallocates result lists when source count is known.
+- Runtime collection conversion caches generic collection converters and preallocates destination lists when possible.
+- Runtime path tracking avoids unnecessary allocation for normal one-level and two-level mapping paths.
+- `MappingContext` creates the public `Items` dictionary only when it is used.
+- Internal map lookup keys use a readonly struct to reduce repeated allocation in hot paths.
+- Public docs now explain when to use `MapField`, `MapFieldDirect`, and `MapFieldStrict`.
+- Package metadata now includes clearer SEO-friendly wording for ZawkMapper, ZawkTech, .NET object mapper, C# DTO mapping, AutoMapper alternative, EF Core projection, and IQueryable projection scenarios.
+
+### Guidance
+
+Use `MapFieldStrict` for same-type member mapping when compile-time safety is important.
+
+Use `MapFieldDirect` for direct same-type assignment when you want explicit direct mapping behavior.
+
+Use `MapField` for flexible conversion, computed fields, nested object mapping, and collection bridges.
+
+For collection bridges such as `List<OrderItem>` to `List<OrderLineDto>`, use `MapField` on the parent collection and define a child map for `OrderItem` to `OrderLineDto`.
+
+Projection behavior is intentionally preserved. `ProjectAs` remains SQL-friendly and should be compared with manual `Select` and AutoMapper `ProjectTo` in real application scenarios.
+
+### Validation
+
+Final benchmark testing against the published NuGet package confirmed that ZawkMapper 0.6.1 keeps the expected release behavior:
+
+- strong EF Core `ProjectAs` projection performance
+- competitive flat DTO runtime mapping
+- competitive summary DTO runtime mapping
+- lower allocation than AutoMapper in some flat and summary runtime benchmark scenarios
+- nested runtime collection mapping remains a future optimization target
+
+Benchmark repository:
+
+```text
+https://github.com/zameer-hussain/ZawkMapper.Benchmarks
+```
+
 ## 0.6.1-rc.1
 
 ### Release candidate
 
-This release candidate focuses on runtime object mapping performance, lower allocation, clearer public documentation, package metadata quality, and stable `ProjectAs` projection behavior.
+This release candidate focused on runtime object mapping performance, allocation reduction, clearer documentation, and package metadata improvements while keeping the public ZawkMapper API unchanged.
 
 ### Changed
 
-- Runtime `MapModel` execution now uses cached runtime plans for repeated mapping calls.
-- Same-type runtime members can avoid unnecessary conversion work.
-- Simple runtime maps avoid creating extra path-tracking state when it is not needed.
-- Runtime collection conversion preallocates destination lists when the source count is known.
-- `MappingContext.Items` is lazy and does not allocate unless a developer actually uses it.
-- Internal map lookup keys use a readonly struct to reduce hot-path allocation.
-- Public docs now explain when to use `MapFieldStrict`, `MapFieldDirect`, and `MapField`.
-- Docs are split into public docs and private owner/developer notes.
-- README and package wording now include clearer .NET object mapper, C# DTO mapping, AutoMapper alternative, EF Core projection, and IQueryable projection wording.
-
-### Guidance
-
-Use `MapFieldStrict` for same-type member mapping when possible.
-
-Use `MapField` for runtime conversion, computed values, nested object mapping, and collection bridges.
-
-For a collection bridge such as `List<OrderItem>` to `List<OrderLineDto>`, use `MapField` on the parent collection member and define a separate child map for `OrderItem` to `OrderLineDto`.
-
-`ProjectAs` projection behavior is intentionally preserved and should remain provider-friendly for EF Core `IQueryable` scenarios.
-
-### Validation before publish
-
-Run restore, release build, smoke tests, unit-style tests, performance lab, MVC sample, and the external comparison benchmark before publishing.
+- Runtime `MapModel` execution moved toward cached assignment planning for common mapping paths.
+- Directly assignable fields avoided runtime conversion when the source expression type could be assigned to the destination member type.
+- Runtime list and collection mapping reduced allocation in common paths.
+- Runtime path tracking became cheaper for common mapping paths.
+- Package metadata and public docs were improved for .NET object mapper, C# DTO mapping, AutoMapper alternative, EF Core projection, and IQueryable projection scenarios.
 
 ## 0.6.0
 
 ### Stable release
 
-This was the first stable 0.6.0 release after the 0.6.0 release-candidate feedback period.
+This was the first stable 0.6.0 release after the 0.6.0 release candidate feedback period.
 
 ### Changed
 
 - `MapModel` and `ProjectModel` are handled as separate registration types.
-- Duplicate `MapModel` registrations for the same source, destination, and name still throw.
-- Duplicate `ProjectModel` registrations for the same source, destination, and name still throw.
+- Duplicate runtime mappings and duplicate projections still throw for the same source, destination, and name.
 - One `MapModel` and one `ProjectModel` for the same source, destination, and name are allowed.
-- `ProjectAs` uses `ProjectModel` first.
-- If no projection exists, `ProjectAs` can reuse `MapModel` when the mapping rules are projection-safe.
+- `ProjectAs` uses `ProjectModel` first. If no projection exists, it can reuse `MapModel` when mapping rules are projection-safe.
 - MVC sample projection maps avoid repeating `IsDeleted` checks where EF Core global query filters already apply them.
 
 ### Added
@@ -54,18 +83,6 @@ This was the first stable 0.6.0 release after the 0.6.0 release-candidate feedba
 - Clearer duplicate and missing configuration error messages.
 - MVC sample scenarios for English and Sindhi named projections, runtime mapping versus projection, salary increment, prefix and suffix, and static cached configuration usage.
 
-### Guidance
-
-Use constants or static readonly values for map and projection names to avoid spelling mistakes.
-
-Use cached app-level configuration for reusable rules.
-
-Use named projections for finite choices such as English, Sindhi, list, detail, public, or admin.
-
-Use scenario-level configuration when the mapping expression depends on request values such as salary increment percentage, prefix, or suffix.
-
-If an entity already has an EF Core global query filter, avoid writing the same filter again inside `ProjectModel` unless you intentionally want that extra condition.
-
 ## 0.5.0-rc.4
 
-Tested release candidate with runtime mapping, strict mapping, direct mapping, flexible conversion, nested projection, named projection, MVC sample, smoke tests, unit-style tests, and performance lab.
+Tested release candidate with runtime mapping, strict mapping, direct mapping, flexible conversion, nested projection, named projection, MVC sample, smoke tests, unit tests, and performance lab.

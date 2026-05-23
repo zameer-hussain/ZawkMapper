@@ -1,38 +1,28 @@
 # Dependency injection
 
-For ASP.NET Core apps, register ZawkMapper once in `Program.cs`.
+For ASP.NET Core MVC or API projects, use `AddZawkMapper` in `Program.cs`.
 
 ```csharp
 builder.Services.AddZawkMapper(cfg =>
 {
-    cfg.AddProfilesFromAssembly(typeof(CustomerMappingProfile).Assembly);
+    cfg.AddProfilesFromAssembly(typeof(ProductMappingProfile).Assembly);
 });
 ```
 
-This registers:
+This registers `MapperConfiguration` as singleton and `IObjectMapper` as scoped.
 
-| Service | Lifetime |
-|---|---|
-| `MapperConfiguration` | Singleton |
-| `IObjectMapper` | Scoped |
-
-Do not manually register `IObjectMapper` again when `AddZawkMapper` is already used.
-
-## Profile example
+You do not need to manually add this when `AddZawkMapper` is already used:
 
 ```csharp
-public sealed class CustomerMappingProfile : MappingProfile
-{
-    public override void Configure(MappingConfigurationExpression cfg)
-    {
-        cfg.MapModel<CustomerCreateDto, Customer>()
-            .MapFieldStrict(d => d.FullName, s => s.FullName)
-            .MapFieldStrict(d => d.IsPremium, s => s.IsPremium);
-
-        cfg.ProjectModel<Customer, CustomerListDto>()
-            .MapField(d => d.Id, s => s.Id)
-            .MapField(d => d.FullName, s => s.FullName)
-            .MapField(d => d.OrdersCount, s => s.Orders.Count());
-    }//Configure
-}//CustomerMappingProfile
+builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
 ```
+
+Manual registration is only needed when you intentionally create `MapperConfiguration` yourself.
+
+```csharp
+var mapperConfiguration = AppMappingConfig.StaticConfigMethod();
+builder.Services.AddSingleton(mapperConfiguration);
+builder.Services.AddScoped<IObjectMapper, ObjectMapper>();
+```
+
+Both styles are valid. The first style is cleaner for most MVC and API projects.

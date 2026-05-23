@@ -12,6 +12,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="ZawkMapper" Version="0.6.1-rc.1" />
+    <PackageReference Include="ZawkMapper" Version="0.6.1" />
   </ItemGroup>
 </Project>

@@ -1,56 +1,51 @@
-# Performance guide
+# ZawkMapper Performance Guide
 
-ZawkMapper performance depends on the mapping style, model shape, warmup, and whether the job is runtime mapping or database projection.
+ZawkMapper is a .NET object mapper and EF Core projection library built by ZawkTech for DTO mapping, runtime object mapping, SQL-friendly IQueryable projection, nested mapping, and collection mapping.
 
-## Production setup
+## Current stable version
 
-Recommended setup:
-
-- create `MapperConfiguration` once
-- use dependency injection or a static cached configuration
-- use `ProjectAs` for database-backed screens
-- use `MapFieldStrict` for same-type runtime fields
-- use `MapField` only for conversion, computed values, nested maps, and collection bridges
-- avoid rebuilding configuration inside loops
-
-## Static cached configuration
-
-```csharp
-public static class AppMappingConfig
-{
-    private static readonly Lazy<MapperConfiguration> Cached = new(() =>
-        new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfilesFromAssembly(typeof(AppMappingConfig).Assembly);
-        }));
-
-    public static MapperConfiguration StaticConfigMethod()
-    {
-        return Cached.Value;
-    }//StaticConfigMethod
-}//AppMappingConfig
+```text
+ZawkMapper 0.6.1
 ```
 
-## Field method guidance
+## Main performance guidance
 
-| Method | Best use |
+Use the mapping method that fits the field.
+
+| Method | Recommended use |
 |---|---|
-| `MapFieldStrict` | same source and destination member type |
-| `MapFieldDirect` | assignable value, direct assignment style |
-| `MapField` | conversion, computed values, nested maps, collection bridges |
+| `MapFieldStrict` | Same-type member mapping with compile-time safety |
+| `MapFieldDirect` | Explicit direct same-type assignment |
+| `MapField` | Flexible conversion, computed fields, nested objects, and collection bridges |
 
-Example:
+## Runtime mapping
+
+Runtime mapping is used when objects are already loaded in memory.
 
 ```csharp
 cfg.MapModel<Customer, CustomerDto>()
     .MapFieldStrict(d => d.Id, s => s.Id)
-    .MapFieldStrict(d => d.Name, s => s.Name)
-    .MapField(d => d.DisplayBalance, s => s.Balance);
+    .MapFieldDirect(d => d.Name, s => s.Name)
+    .MapField(d => d.TotalText, s => s.Total);
 ```
 
-## Nested collection bridge
+Use cached application-level configuration where possible. Rebuilding mapping configuration repeatedly is slower than reusing a singleton or cached configuration.
 
-Do not use `MapFieldStrict` for a collection bridge when source and destination member types are different.
+## Projection
+
+Projection is used when EF Core or another LINQ provider can translate the mapping expression into a query.
+
+```csharp
+var customers = await db.Customers
+    .ProjectAs<CustomerDto>(mapperConfig)
+    .ToListAsync();
+```
+
+`ProjectAs` is designed to stay SQL-friendly. Avoid using normal runtime-only C# methods inside `ProjectModel` expressions.
+
+## Nested collections
+
+For collection bridges such as `List<OrderItem>` to `List<OrderLineDto>`, use `MapField` on the parent collection and define a separate child map.
 
 ```csharp
 cfg.MapModel<Order, OrderDetailDto>()
@@ -58,28 +53,27 @@ cfg.MapModel<Order, OrderDetailDto>()
 
 cfg.MapModel<OrderItem, OrderLineDto>()
     .MapFieldStrict(d => d.ProductName, s => s.ProductName)
-    .MapFieldStrict(d => d.Quantity, s => s.Quantity)
-    .MapFieldStrict(d => d.UnitPrice, s => s.UnitPrice);
+    .MapFieldStrict(d => d.Quantity, s => s.Quantity);
 ```
 
-## Benchmark honestly
+`MapFieldStrict` requires source and destination member types to match, so it should not be used directly for a collection bridge where the item types are different.
 
-Keep runtime mapping and projection results separate.
+## Benchmark notes
 
-Runtime mapping measures object-to-object mapping after data is already loaded.
+Public benchmark project:
 
-Projection measures query expression translation and database/provider behavior.
+```text
+https://github.com/zameer-hussain/ZawkMapper.Benchmarks
+```
 
-Useful comparison groups:
+The benchmark compares ZawkMapper, AutoMapper, and Manual Mapping across runtime DTO mapping, nested object mapping, collection mapping, EF Core projection, time, memory, per-record cost, and checksum validation.
 
-- manual mapping
-- AutoMapper runtime mapping
-- ZawkMapper `MapField`
-- ZawkMapper `MapFieldDirect`
-- ZawkMapper `MapFieldStrict`
-- ZawkMapper mixed mapping
-- manual `Select`
-- AutoMapper `ProjectTo`
-- ZawkMapper `ProjectAs`
+Results vary by hardware, .NET runtime, database provider, data shape, and background workload.
 
-Do not claim one library is faster in every case. Model shape, nested collections, database provider, CPU load, and warmup all matter.
+## Honest performance position
+
+Manual mapping remains the best baseline for raw hand-written runtime speed.
+
+ZawkMapper 0.6.1 is competitive in flat DTO and summary DTO runtime mapping scenarios and strong in EF Core `ProjectAs` projection scenarios.
+
+Nested runtime collection mapping remains one of the next optimization targets.
